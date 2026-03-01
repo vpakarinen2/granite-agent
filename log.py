@@ -1,4 +1,3 @@
-# log.py
 import logging
 import sys
 import os
@@ -34,3 +33,4 @@ def setup_logger(name="GraniteAgent", log_file="agent.log", level=logging.INFO):
     return logger
 
 agent_logger = setup_logger()
+
