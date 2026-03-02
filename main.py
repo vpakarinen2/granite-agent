@@ -12,8 +12,8 @@ from transformers import (
     StoppingCriteriaList
 )
 
-from error import KillSwitchTriggeredError, InsufficientDataError
 from tools import get_current_datetime, perform_web_search
+from error import KillSwitchTriggeredError
 from lora import apply_lora_adapter
 from log import agent_logger
 
@@ -63,57 +63,46 @@ def initialize_engine():
     return tokenizer, model
 
 
-def execute_single_task(user_input: str, tokenizer, model, message_history: list):
-    gc.collect()
-    torch.cuda.empty_cache()
-
-    if len(message_history) > 7: 
-        trimmed_history = [message_history[0]] + message_history[-8:]
-        message_history.clear()
-        message_history.extend(trimmed_history)
-        agent_logger.debug("VRAM Safety: History window rotated.")
-
+def execute_single_task(user_input, tokenizer, model, message_history):
+    if len(message_history) > 5:
+        message_history[:] = [message_history[0]] + message_history[-4:]
+        
     current_time = get_current_datetime()
-    search_keywords = config['agent_config']['search_config'].get('keywords', [])
-    search_data = ""
     
-    if any(kw in user_input.lower() for kw in search_keywords):
-        max_res = config['agent_config']['search_config'].get('max_results', 3)
-        search_data = perform_web_search(user_input, max_results=max_res)
-
-    grounded_input = (
-        f"### Input:\n"
-        f"--- DATA CONTEXT ---\n"
-        f"SYSTEM_TIME: {current_time}\n"
-        f"SEARCH_DATA_TRUTH: {search_data if search_data else 'NO DATA FOUND'}\n"
-        f"--- END OF DATA ---\n\n"
-        f"TASK: {user_input}\n\n"
-        f"### Response:\n<think>\n"
-    )
-
-    message_history.append({"role": "user", "content": grounded_input})
+    max_res = config['agent_config']['search_config'].get('max_results', 3)
+    search_keywords = config['agent_config']['search_config'].get('keywords', ['search'])
     
-    full_prompt = ""
-    for msg in message_history:
-        if msg['role'] == 'system':
-            full_prompt += f"### Instruction:\n{msg['content']}\n\n"
-        else:
-            full_prompt += msg['content']
+    search_data = perform_web_search(
+        user_input, 
+        max_results=max_res
+    ) if any(kw in user_input.lower() for kw in search_keywords) else ""
 
-    inputs = tokenizer(full_prompt, return_tensors="pt").to(model.device)
+    volatile_prompt = f"[SYSTEM_TIME: {current_time}]\n\n"
+    if search_data:
+        volatile_prompt += f"[SEARCH_DATA]:\n{search_data}\n\n"
+    volatile_prompt += f"USER_REQUEST: {user_input}"
+
+    message_history.append({"role": "user", "content": volatile_prompt})
+
+    inputs = tokenizer.apply_chat_template(
+        message_history, 
+        tokenize=True, 
+        add_generation_prompt=True, 
+        return_tensors="pt"
+    ).to("cuda")
 
     streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     kill_switch = ThreadKillSwitch()
-    
+
     gen_kwargs = {
-        "input_ids": inputs["input_ids"],
+        "input_ids": inputs["input_ids"],             
         "attention_mask": inputs["attention_mask"],
         "streamer": streamer,
         "stopping_criteria": StoppingCriteriaList([kill_switch]),
-        "max_new_tokens": config['agent_config']['generation']['max_new_tokens'],
-        "temperature": config['agent_config']['generation']['temperature'],
-        "repetition_penalty": config['agent_config']['generation']['repetition_penalty'],
-        "do_sample": True,
+        "max_new_tokens": config['agent_config']['generation'].get('max_new_tokens', 1024),
+        "temperature": config['agent_config']['generation'].get('temperature', 0.15),
+        "repetition_penalty": config['agent_config']['generation'].get('repetition_penalty', 1.12),
+        "do_sample": config['agent_config']['generation'].get('do_sample', True),
         "use_cache": True,
         "pad_token_id": tokenizer.eos_token_id,
         "eos_token_id": tokenizer.eos_token_id
@@ -124,8 +113,6 @@ def execute_single_task(user_input: str, tokenizer, model, message_history: list
 
     generated_text = ""
     try:
-        generated_text = "<think>\n"
-        
         for new_text in streamer:
             generated_text += new_text
             print(new_text, end="", flush=True)
@@ -135,18 +122,24 @@ def execute_single_task(user_input: str, tokenizer, model, message_history: list
                 raise KillSwitchTriggeredError("User:", generated_text)
 
         gen_thread.join()
-        print() 
-        message_history.append({"role": "assistant", "content": generated_text.strip()})
-
-        del inputs
-        gc.collect()
-        torch.cuda.empty_cache()
-
-        return generated_text.strip()
-
-    except KillSwitchTriggeredError:
-        gen_thread.join() 
-        torch.cuda.empty_cache()
         print()
-        return "[SYSTEM INTERVENTION: Boundary violation.]"
 
+    except KillSwitchTriggeredError as e:
+        gen_thread.join()
+        generated_text = generated_text.replace("User:", "").strip()
+        print("\n[SYSTEM] Generation severed to prevent hallucination.")
+
+    message_history[-1]["content"] = user_input 
+
+    if "<think>" in generated_text and "</think>" in generated_text:
+        final_clean_answer = generated_text.split("</think>")[-1].strip()
+    else:
+        final_clean_answer = generated_text.strip()
+        
+    message_history.append({"role": "assistant", "content": final_clean_answer})
+
+    del inputs
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    return final_clean_answer
