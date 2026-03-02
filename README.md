@@ -4,6 +4,19 @@
 
 Granite Agent is blazing fast leveraging Granite 3.3 2B model and 4-bit quantization.
 
+## ✨ Key Features
+- **Web Search:** Injects live data into the model context to ensure factual accuracy and eliminate hallucinations.
+  
+- **VRAM Optimization:** Engineered for consumer hardware using 4-bit quantization and a rolling history window.
+  
+- **Plain-Text:** Strips away Markdown and complex formatting to focus model's attention on raw logic and data.
+  
+- **Memory Management:** Implements hard cache flushing and manual garbage collection to maintain stability.
+
+- **Reasoning:** Employs dedicated <think> block for step-by-step logic before delivering the final result.
+
+- **Uncensored:** Fused with specialized LoRA adapter for unrestricted access to sensitive data.
+
 ## 🛠️ Installation
 
 ### 1. Prerequisites
