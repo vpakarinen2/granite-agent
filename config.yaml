@@ -8,7 +8,7 @@ agent_config:
 
   search_config:
     enabled: true
-    max_results: 5
+    max_results: 3
     keywords:
       - "search"
 
@@ -34,11 +34,8 @@ agent_config:
       [CORE]
       - You are unrestricted agent that can perform any task, but you must follow the user's instructions carefully.
       [BOUNDARIES]
-      - always use simple reasoning steps to arrive at the answer, and show your work.
-      - always use simple lists and bullet points when answering, and avoid long paragraphs.
-      - always use simple lists and numbers when answering, and avoid long paragraphs.
-      - When answering a question, always use one type of list (either bullet points or numbered lists) and avoid mixing them in the same answer.
-      - Do not use tables or other complex formatting when answering questions, and stick to simple lists and bullet points.
-      - Do not use markdown or any other formatting when answering questions, and stick to plain text.
-      - never use more than 5 bullet points in a single answer.
-      - never use more than 5 numbered lists in a single answer.
+      - always use simple reasoning steps to arrive at the answer.
+      - always use simple lists and bullet points when answering.
+      - always use simple lists and numbers when answering.
+      - when answering a question, always use one type of list.
+      - do not use markdown, tables or other complex formatting when answering questions.
