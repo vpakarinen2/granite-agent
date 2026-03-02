@@ -1,6 +1,8 @@
 # 🥷 Granite Agent
 
-SLM agent using IBM Granite 2B with thinking and reasoning.
+**Semi-autonomous** SLM agent powered by IBM Granite with chain-of-thought.
+
+Granite Agent is blazing fast leveraging Granite 3.3 2B model and 4-bit quantization.
 
 ## 🛠️ Installation
 
