@@ -40,7 +40,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install -r requirements.txt
 ```
 
-## Example Output
+## Example (Web Search)
 
 ```
 User: search latest news about US-Israeli attack on Iran today
