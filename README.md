@@ -1,13 +1,13 @@
 # 🥷 Granite Agent
 
-**Semi-autonomous** SLM agent powered by IBM Granite with chain-of-thought.
+Semi-autonomous SLM agent powered by IBM Granite with chain-of-thought.
 
 Granite Agent is blazing fast leveraging Granite 3.3 2B model and 4-bit quantization.
 
 ## ✨ Key Features
 - **Web Search:** Injects live data into the model context to ensure factual accuracy and eliminate hallucinations.
   
-- **VRAM Optimization:** Engineered for consumer hardware using 4-bit quantization and a rolling history window.
+- **VRAM Optimization:** Engineered for consumer hardware using 4-bit quantization and rolling history window.
   
 - **Plain-Text:** Strips away Markdown and complex formatting to focus model's attention on raw logic and data.
   
@@ -52,8 +52,6 @@ First, looking at source [1], it mentions that "The death toll from a US - Israe
 Source [2] also talks about the same incident, confirming the death toll as 150+ civilians. It includes quotes from Iranian officials stating they were targeting military sites but civilians were harmed. There's also mention of Iran retaliating after the attacks.
 
 Sources [5] and [6] discuss the US acknowledging there was no prior intel about Iran planning an attack against them, which adds context to the timing of these strikes. Source [7] is a TASS article citing Russian sources saying the US admitted there was no intelligence about Iran planning to attack first, which aligns with [5].
-
-So, putting all this together, the main sources discussing the US-Israeli attacks on Iran include [1][2][5][6]. They report high casualties among civilians and Iran's retaliatory actions following the strikes. The key takeaway is the severity of the attacks and subsequent Iranian responses.
 </think>
 
 **Latest Reports on US-Israeli Strikes on Iran:**  
