@@ -12,10 +12,17 @@ from transformers import (
     StoppingCriteriaList
 )
 
-from tools import get_current_datetime, perform_web_search, save_to_file
+from tools import get_current_datetime, perform_web_search, save_to_file, apply_formatting_filter
 from error import KillSwitchTriggeredError
 from lora import apply_lora_adapter
 from log import agent_logger
+
+
+class ThreadKillSwitch(StoppingCriteria):
+    def __init__(self):
+        self.halt_generation = False
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        return self.halt_generation
 
 
 def load_config(config_path="config.yaml"):
@@ -23,12 +30,6 @@ def load_config(config_path="config.yaml"):
         return yaml.safe_load(f)
 
 config = load_config()
-
-class ThreadKillSwitch(StoppingCriteria):
-    def __init__(self):
-        self.halt_generation = False
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        return self.halt_generation
 
 
 def initialize_engine():
@@ -142,6 +143,22 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         save_keywords = file_cfg.get('keywords', ['save', 'export'])
         if any(key in user_input.lower() for key in save_keywords):
             save_to_file(final_clean_answer, user_input)
+
+    fmt_cfg = config['agent_config'].get('formatting_config', {})
+
+    if fmt_cfg.get('enabled', False):
+        triggers = fmt_cfg.get('triggers', {})
+        target = None
+        
+        if any(k in user_input.lower() for k in triggers.get('bullets', [])):
+            target = "bullets"
+        elif any(k in user_input.lower() for k in triggers.get('numbers', [])):
+            target = "numbers"
+        elif any(k in user_input.lower() for k in triggers.get('clean', [])):
+            target = "clean"
+            
+        if target:
+            final_clean_answer = apply_formatting_filter(final_clean_answer, target)
         
     message_history.append({"role": "assistant", "content": final_clean_answer})
 
