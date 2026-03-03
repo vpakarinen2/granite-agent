@@ -1,4 +1,6 @@
 import datetime
+import os
+import re
 
 from scrape import scrape_url
 from log import agent_logger
@@ -36,3 +38,28 @@ def perform_web_search(query: str, max_results=4):
     except Exception as e:
         agent_logger.error(f"DDGS Search Error: {str(e)}")
         return f"Error connecting to search engine: {str(e)}"
+
+
+def save_to_file(content: str, prompt_as_filename: str):
+    """Saves text content to file named after the prompt."""
+    try:
+        output_dir = "outputs"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        clean_name = re.sub(r'[^\w\s-]', '', prompt_as_filename).strip().replace(' ', '_')
+        truncated_name = clean_name[:50] if len(clean_name) > 50 else clean_name
+        
+        if not truncated_name:
+            truncated_name = "agent_output"
+
+        file_path = os.path.join(output_dir, f"{truncated_name}.txt")
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+            
+        agent_logger.info(f"Successfully exported research to: {file_path}")
+        return file_path
+    except Exception as e:
+        agent_logger.error(f"Failed to save file: {str(e)}")
+        return None
