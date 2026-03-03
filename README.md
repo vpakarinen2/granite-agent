@@ -80,6 +80,17 @@ you can activate file save using keyword **save**:
 save to a file
 ```
 
+#### Answer Format
+you can activate format using one of these keywords:
+
+```
+use bullet
+---
+use number
+----
+use paragraph
+```
+
 ## ☕ Support
 If you find this project valuable, consider supporting my work:
 
