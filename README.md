@@ -67,21 +67,21 @@ python cli.py
 ### Commands
 
 #### Web Search
-you can activate web search using keyword **search**:
+Activate web search using keyword **search**:
 
 ```
 search <query>
 ```
 
 #### Save File
-you can activate file save using keyword **save**:
+Activate file save using keyword **save**:
 
 ```
 save to a file
 ```
 
 #### Answer Format
-you can activate format using one of these keywords:
+Activate format using one of these keywords:
 
 ```
 use bullet
