@@ -17,6 +17,13 @@ agent_config:
     keywords:
       - "save"
       - "export"
+
+    formatting_config:
+    enabled: true
+    triggers:
+      bullets: ["bullet"]
+      numbers: ["number"]
+      clean: ["paragraph"]
       
   generation:
     temperature: 0.15           
