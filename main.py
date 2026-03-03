@@ -12,7 +12,7 @@ from transformers import (
     StoppingCriteriaList
 )
 
-from tools import get_current_datetime, perform_web_search
+from tools import get_current_datetime, perform_web_search, save_to_file
 from error import KillSwitchTriggeredError
 from lora import apply_lora_adapter
 from log import agent_logger
@@ -135,6 +135,13 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         final_clean_answer = generated_text.split("</think>")[-1].strip()
     else:
         final_clean_answer = generated_text.strip()
+
+    file_cfg = config['agent_config'].get('file_output_config', {})
+
+    if file_cfg.get('enabled', False):
+        save_keywords = file_cfg.get('keywords', ['save', 'export'])
+        if any(key in user_input.lower() for key in save_keywords):
+            save_to_file(final_clean_answer, user_input)
         
     message_history.append({"role": "assistant", "content": final_clean_answer})
 
