@@ -16,7 +16,6 @@ agent_config:
     enabled: true
     keywords:
       - "save"
-      - "export"
 
     formatting_config:
     enabled: true
@@ -65,4 +64,5 @@ agent_config:
       [FORMATTING RULES]
       - If you list a source, you MUST copy the exact raw URL string from the SOURCE field in the SEARCH_DATA (e.g., https://...).
       - NEVER use markdown link formatting like [Source](url). Just print the raw URL. 
+
       - NEVER leave a source link blank.
