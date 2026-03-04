@@ -9,7 +9,7 @@ from log import agent_logger
 class Colors:
     SYSTEM = '\033[95m'       
     USER = '\033[92m'         
-    AGENT = '\033[97m'        
+    AGENT = '\033[94m'        
     WARNING = '\033[93m'      
     ERROR = '\033[91m'        
     RESET = '\033[0m'         
