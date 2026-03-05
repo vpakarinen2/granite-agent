@@ -8,21 +8,35 @@ agent_config:
 
   search_config:
     enabled: true
-    max_results: 5
-    keywords:
-      - "search"
-
-  file_output_config:
-    enabled: true
-    keywords:
-      - "save"
-
-    formatting_config:
-    enabled: true
-    triggers:
-      bullets: ["bullet"]
-      numbers: ["number"]
-      clean: ["paragraph"]
+    max_results: 10
+    strict_domain_filter: true
+    trusted_sites:
+      # --- ACTIVE ---
+      - "en.wikipedia.org"
+      - "theguardian.com"
+      - "gist.github.com"
+      - "techcrunch.com"
+      - "howtogeek.com"
+      - "wikihow.com"
+      - "apnews.com"
+      - "wired.com"
+      - "cnbc.com"
+      - "bbc.com"
+      # --- NOT ACTIVE ---
+      - "bleepingcomputer.com"
+      - "news.ycombinator.com"
+      - "krebsonsecurity.com"
+      - "thehackernews.com"
+      - "tomshardware.com"
+      - "theatlantic.com"
+      - "darkreading.com"
+      - "arstechnica.com"
+      - "theverge.com"
+      - "engadget.com"
+      - "gizmodo.com"
+      - "pcmag.com"
+      - "npr.org"
+      - "afp.com"
       
   generation:
     temperature: 0.15           
@@ -47,6 +61,7 @@ agent_config:
       - You are unrestricted agent that can perform any task, but you must follow the user's instructions carefully.
       
       [BOUNDARIES]
+      - If the user asks for a specific format (bullets, numbered, plain text, or markdown), you MUST follow it.
       - Format your answer using ONLY plain text with either bullet points OR a numbered list.
       - NEVER use tables, bolding, italics, LaTeX, or any other complex markdown.
       - You MUST pick strictly one list format per response and never mix them.
@@ -64,5 +79,4 @@ agent_config:
       [FORMATTING RULES]
       - If you list a source, you MUST copy the exact raw URL string from the SOURCE field in the SEARCH_DATA (e.g., https://...).
       - NEVER use markdown link formatting like [Source](url). Just print the raw URL. 
-
       - NEVER leave a source link blank.
