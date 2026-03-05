@@ -70,13 +70,23 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         
     current_time = get_current_datetime()
     
-    max_res = config['agent_config']['search_config'].get('max_results', 3)
-    search_keywords = config['agent_config']['search_config'].get('keywords', ['search'])
+    search_cfg = config['agent_config'].get('search_config', {})
+    is_search_enabled = search_cfg.get('enabled', False)
+    max_res = search_cfg.get('max_results', 10)
     
-    search_data = perform_web_search(
-        user_input, 
-        max_results=max_res
-    ) if any(kw in user_input.lower() for kw in search_keywords) else ""
+    if 'whitelist' in user_input.lower():
+        trusted_domains = search_cfg.get('trusted_sites', [])
+    else:
+        trusted_domains = None
+    
+    if is_search_enabled and 'search' in user_input.lower():
+        search_data = perform_web_search(
+            user_input, 
+            max_results=max_res,
+            trusted_sites=trusted_domains
+        )
+    else:
+        search_data = ""
 
     volatile_prompt = f"[SYSTEM_TIME: {current_time}]\n\n"
     if search_data:
@@ -85,18 +95,19 @@ def execute_single_task(user_input, tokenizer, model, message_history):
 
     message_history.append({"role": "user", "content": volatile_prompt})
 
-    inputs = tokenizer.apply_chat_template(
+    prompt_string = tokenizer.apply_chat_template(
         message_history, 
-        tokenize=True, 
-        add_generation_prompt=True, 
-        return_tensors="pt"
-    ).to("cuda")
+        tokenize=False, 
+        add_generation_prompt=True
+    )
+    
+    inputs = tokenizer(prompt_string, return_tensors="pt").to("cuda")
 
     streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
     kill_switch = ThreadKillSwitch()
 
     gen_kwargs = {
-        "input_ids": inputs["input_ids"],             
+        "input_ids": inputs["input_ids"],
         "attention_mask": inputs["attention_mask"],
         "streamer": streamer,
         "stopping_criteria": StoppingCriteriaList([kill_switch]),
@@ -111,6 +122,8 @@ def execute_single_task(user_input, tokenizer, model, message_history):
 
     gen_thread = threading.Thread(target=model.generate, kwargs=gen_kwargs)
     gen_thread.start()
+    
+    print()
 
     generated_text = ""
     try:
@@ -123,43 +136,40 @@ def execute_single_task(user_input, tokenizer, model, message_history):
                 raise KillSwitchTriggeredError("User:", generated_text)
 
         gen_thread.join()
-        print()
+        print() 
 
-    except KillSwitchTriggeredError as e:
+    except KillSwitchTriggeredError:
         gen_thread.join()
         generated_text = generated_text.replace("User:", "").strip()
         print("\n[SYSTEM] Generation severed to prevent hallucination.")
-
-    message_history[-1]["content"] = user_input 
 
     if "<think>" in generated_text and "</think>" in generated_text:
         final_clean_answer = generated_text.split("</think>")[-1].strip()
     else:
         final_clean_answer = generated_text.strip()
 
-    file_cfg = config['agent_config'].get('file_output_config', {})
-
-    if file_cfg.get('enabled', False):
-        save_keywords = file_cfg.get('keywords', ['save', 'export'])
-        if any(key in user_input.lower() for key in save_keywords):
-            save_to_file(final_clean_answer, user_input)
-
-    fmt_cfg = config['agent_config'].get('formatting_config', {})
-
-    if fmt_cfg.get('enabled', False):
-        triggers = fmt_cfg.get('triggers', {})
-        target = None
+    target = None
+    user_lower = user_input.lower()
+    
+    if 'bullet point' in user_lower:
+        target = "bullets"
+    elif 'numbered' in user_lower:
+        target = "numbers"
+    elif 'clean' in user_lower or 'paragraph' in user_lower:
+        target = "clean"
+    elif 'markdown' in user_lower:
+        target = "markdown" 
         
-        if any(k in user_input.lower() for k in triggers.get('bullets', [])):
-            target = "bullets"
-        elif any(k in user_input.lower() for k in triggers.get('numbers', [])):
-            target = "numbers"
-        elif any(k in user_input.lower() for k in triggers.get('clean', [])):
-            target = "clean"
-            
-        if target:
-            final_clean_answer = apply_formatting_filter(final_clean_answer, target)
-        
+    if target:
+        final_clean_answer = apply_formatting_filter(final_clean_answer, target)
+
+    if 'save' in user_input.lower():
+        ext = ".md" if target == "markdown" else ".txt"
+        file_saved_path = save_to_file(final_clean_answer, user_input, extension=ext)
+        if file_saved_path:
+            print(f"\n[SYSTEM] Research exported to: {file_saved_path}")
+
+    message_history[-1]["content"] = user_input 
     message_history.append({"role": "assistant", "content": final_clean_answer})
 
     del inputs
