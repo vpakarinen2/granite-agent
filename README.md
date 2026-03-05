@@ -88,18 +88,20 @@ search <query>
 Activate using keyword **save**:
 
 ```
-save to a file
+save
 ```
 
 #### Answer Format
 Activate using one of these keywords:
 
 ```
-use bullet
+bullet point
 ---
-use number
-----
-use paragraph
+numbered
+---
+clean
+---
+markdown
 ```
 
 ## ☕ Support
