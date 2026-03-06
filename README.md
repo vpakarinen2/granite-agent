@@ -45,18 +45,28 @@ pip install -r requirements.txt
 
 ## Example
 
-```bash
---- Granite Agent ---
-Type 'exit' or 'quit' to stop.
+```
+User: search top 5 lightweight Linux distros to use in 2026, bullet point, no more than five sentences, save
+Agent: 2026-03-06 12:13:58,336 - GraniteAgent - INFO - Sanitized query for search engine: 'top 5 lightweight linux distros to use in 2026'
+2026-03-06 12:13:58,363 - GraniteAgent - INFO - Broad Search Triggered: 'top 5 lightweight linux distros to use in 2026'
+2026-03-06 12:14:01,084 - GraniteAgent - INFO - Scraping URL: https://thishosting.rocks/best-lightweight-linux-distros/
+2026-03-06 12:14:02,679 - GraniteAgent - INFO - Successfully validated deep context from: https://thishosting.rocks/best-lightweight-linux-distros/
+2026-03-06 12:14:06,878 - GraniteAgent - INFO - Total valid sources compiled: 8
 
-User: search resident evil requiem metacritic pc, summary, no more than three sentences
-Agent: 2026-03-05 11:50:13,008 - GraniteAgent - INFO - Sanitized query for search engine: 'resident evil requiem metacritic pc'
-2026-03-05 11:50:13,044 - GraniteAgent - INFO - Broad Search Triggered: 'resident evil requiem metacritic pc'
-2026-03-05 11:50:15,354 - GraniteAgent - INFO - Scraping URL: https://www.metacritic.com/game/resident-evil-requiem/
-2026-03-05 11:50:15,917 - GraniteAgent - INFO - Successfully validated deep context from: https://www.metacritic.com/game/resident-evil-requiem/
-2026-03-05 11:50:21,565 - GraniteAgent - INFO - Total valid sources compiled: 9
+**Top 5 Lightweight Linux Distros for 2026:**  
 
-Resident Evil Requiem received widespread acclaim on PC, achieving the highest user score of 9.5 on Metacritic. Users praised its blend of classic survival horror and modern action elements, exceptional graphics via the RE Engine, and engaging dual protagonists. However, some critics noted minor issues like an underwhelming narrative and sluggish pacing.
+1. **Slax (Debian-based)**  
+   - Portable, under 300MB, uses Xfce for simplicity. Ideal for reviving old devices.  
+2. **Linux Lite (Ubuntu-based)**  
+   - User-friendly, Xfce desktop, perfect for beginners needing minimalism.  
+3. **Puppy Linux**  
+   - Extremely small (44MB base), customizable via Puppy Package Manager.  
+4. **Lubuntu (Ubuntu variant)**  
+   - Retains Ubuntu’s polish while reducing resource usage.  
+5. **Tails OS**  
+   - Preconfigured for privacy/anonymity; starts with browser, email, etc.
+
+2026-03-06 12:14:56,800 - GraniteAgent - INFO - Successfully exported research to: outputs\search_top_5_lightweight_Linux_distros_to_use_in_2.txt
 ```
 
 ## 🚀 Usage
@@ -70,16 +80,16 @@ python cli.py
 ### Commands
 
 ```bash
-Web Search
+## Web Search
 Activate using keyword: search
 
-Save File
+## Save File
 Activate using keyword: save
 
-Trusted Sites
+## Trusted Sites
 Activate using keyword: whitelist
 
-Answer Format
+## Answer Format
 Activate using one of these keywords:
 
 bullet point
@@ -87,7 +97,7 @@ numbered
 markdown
 clean
 
-Clean Output
+## Clean Output
 To have cleaner output use one of these:
 
 no more than three sentences
