@@ -77,28 +77,31 @@ Agent: 2026-03-06 12:13:58,336 - GraniteAgent - INFO - Sanitized query for searc
 python cli.py
 ```
 
-### Commands
+### Prompt Keywords
 
 ```bash
 ## Web Search
-Activate using keyword: search
+keyword: search
 
 ## Save File
-Activate using keyword: save
+keyword: save
 
 ## Trusted Sites
-Activate using keyword: whitelist
+keyword: whitelist
+
+## Summary
+keyword: summary
 
 ## Answer Format
-Activate using one of these keywords:
+use one of these keywords:
 
 bullet point
 numbered
 markdown
 clean
 
-## Clean Output
-To have cleaner output use one of these:
+## Shorter Sentence
+use one of these keywords:
 
 no more than three sentences
 no more than five sentences
