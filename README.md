@@ -2,8 +2,6 @@
 
 Semi-autonomous intelligent small agent powered by IBM Granite.
 
-Granite Agent is blazing fast using Granite 2B model and 4-bit quantization.
-
 ## ⭐ Key Features
 
 - **Web Search:** Injects live data into the model context to ensure factual accuracy and prevent hallucination.
