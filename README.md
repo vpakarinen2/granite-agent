@@ -101,6 +101,7 @@ clean
 ## Shorter Sentence
 use one of these keywords:
 
+no more than one sentence
 no more than three sentences
 no more than five sentences
 no more than ten sentences
