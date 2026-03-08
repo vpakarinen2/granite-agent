@@ -2,6 +2,7 @@ import threading
 import torch
 import yaml
 import gc
+import re
 
 from transformers import (
     AutoModelForCausalLM,
@@ -12,7 +13,16 @@ from transformers import (
     StoppingCriteriaList
 )
 
-from tools import get_current_datetime, perform_web_search, save_to_file, apply_formatting_filter
+from tools import (
+    get_current_datetime, 
+    get_world_clock, 
+    perform_web_search, 
+    save_to_file, 
+    apply_formatting_filter, 
+    read_local_document, 
+    analyze_local_image
+)
+
 from error import KillSwitchTriggeredError
 from lora import apply_lora_adapter
 from log import agent_logger
@@ -33,7 +43,7 @@ config = load_config()
 
 
 def initialize_engine():
-    agent_logger.info("Initializing Granite-3.3-2B engine...")
+    agent_logger.info("Initializing Granite engine...")
     
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -69,17 +79,36 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         message_history[:] = [message_history[0]] + message_history[-4:]
         
     current_time = get_current_datetime()
-    
+
+    doc_data = ""
+    if 'read' in user_input.lower():
+        match = re.search(r'([\w\.\-\\/]+\.(?:pdf|docx|txt|html|pptx|md|log))', user_input, flags=re.IGNORECASE)
+        if match:
+            file_path = match.group(1)
+            doc_data = read_local_document(file_path)
+        else:
+            agent_logger.warning("Read command detected, but no valid file extension found in prompt.")
+
+    vision_data = ""
+    image_match = re.search(r'([\w\.\-\\/]+\.(?:png|jpg|jpeg|webp))', user_input, flags=re.IGNORECASE)
+    if image_match:
+        image_path = image_match.group(1)
+        vision_data = analyze_local_image(image_path, user_input)
+
+    clock_data = ""
+    if any(kw in user_input.lower() for kw in ['time', 'clock']):
+        agent_logger.info("Synchronizing temporal context across global zones...")
+        clock_data = get_world_clock()
+
     search_cfg = config['agent_config'].get('search_config', {})
-    is_search_enabled = search_cfg.get('enabled', False)
-    max_res = search_cfg.get('max_results', 10)
+    max_res = search_cfg.get('max_results', 5)
     
     if 'whitelist' in user_input.lower():
         trusted_domains = search_cfg.get('trusted_sites', [])
     else:
         trusted_domains = None
     
-    if is_search_enabled and 'search' in user_input.lower():
+    if 'search' in user_input.lower():
         search_data = perform_web_search(
             user_input, 
             max_results=max_res,
@@ -88,10 +117,17 @@ def execute_single_task(user_input, tokenizer, model, message_history):
     else:
         search_data = ""
 
-    volatile_prompt = f"[SYSTEM_TIME: {current_time}]\n\n"
+    volatile_prompt = f"### Input:\n[SYSTEM_TIME: {current_time}]\n\n"
+    if clock_data:
+        volatile_prompt += f"{clock_data}\n\n"
+    if doc_data:
+        volatile_prompt += f"{doc_data}\n"
+    if vision_data:
+        volatile_prompt += f"{vision_data}\n"
     if search_data:
         volatile_prompt += f"[SEARCH_DATA]:\n{search_data}\n\n"
-    volatile_prompt += f"USER_REQUEST: {user_input}"
+        
+    volatile_prompt += f"### Instruction:\n{user_input}"
 
     message_history.append({"role": "user", "content": volatile_prompt})
 
@@ -101,9 +137,11 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         add_generation_prompt=True
     )
     
+    prompt_string += "<think>\n"
+    
     inputs = tokenizer(prompt_string, return_tensors="pt").to("cuda")
-
     streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    
     kill_switch = ThreadKillSwitch()
 
     gen_kwargs = {
@@ -158,16 +196,16 @@ def execute_single_task(user_input, tokenizer, model, message_history):
     elif 'clean' in user_lower or 'paragraph' in user_lower:
         target = "clean"
     elif 'markdown' in user_lower:
-        target = "markdown" 
+        target = "markdown"
         
     if target:
         final_clean_answer = apply_formatting_filter(final_clean_answer, target)
 
-    if 'save' in user_input.lower():
+    if 'save' in user_lower:
         ext = ".md" if target == "markdown" else ".txt"
         file_saved_path = save_to_file(final_clean_answer, user_input, extension=ext)
         if file_saved_path:
-            print(f"\n[SYSTEM] Research exported to: {file_saved_path}")
+            print(f"\n[SYSTEM] Output successfully saved to: {file_saved_path}")
 
     message_history[-1]["content"] = user_input 
     message_history.append({"role": "assistant", "content": final_clean_answer})
