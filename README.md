@@ -39,6 +39,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 ### 4. Install Requirements
 ```bash
 pip install -r requirements.txt
+pip install docling
 ```
 
 ## Example
@@ -81,14 +82,14 @@ python cli.py
 ## Web Search
 keyword: search
 
+## Read File
+keyword: read
+
 ## Save File
 keyword: save
 
 ## Trusted Sites
 keyword: whitelist
-
-## Summary
-keyword: summary
 
 ## Answer Format
 use one of these keywords:
@@ -101,10 +102,7 @@ clean
 ## Shorter Sentence
 use one of these keywords:
 
-no more than one sentence
-no more than three sentences
-no more than five sentences
-no more than ten sentences
+no more than one|three|five|ten sentence(s)
 ```
 
 ## ☕ Support
