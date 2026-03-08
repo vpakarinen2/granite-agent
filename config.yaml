@@ -6,77 +6,61 @@ agent_config:
     use_bits_and_bytes: true
     attn_implementation: "sdpa"
 
+  generation:
+    max_new_tokens: 1024
+    temperature: 0.15
+    repetition_penalty: 1.12
+    do_sample: true
+
   search_config:
     enabled: true
     max_results: 10
     strict_domain_filter: true
     trusted_sites:
       # --- ACTIVE ---
+      - "news.ycombinator.com"
       - "en.wikipedia.org"
-      - "theguardian.com"
-      - "gist.github.com"
       - "techcrunch.com"
       - "howtogeek.com"
       - "wikihow.com"
+      - "github.com"
       - "apnews.com"
       - "wired.com"
-      - "cnbc.com"
-      - "bbc.com"
+      - "npr.org"
       # --- NOT ACTIVE ---
       - "bleepingcomputer.com"
-      - "news.ycombinator.com"
       - "krebsonsecurity.com"
       - "thehackernews.com"
       - "tomshardware.com"
       - "theatlantic.com"
       - "darkreading.com"
       - "arstechnica.com"
+      - "theguardian.com"
       - "theverge.com"
       - "engadget.com"
       - "gizmodo.com"
       - "pcmag.com"
-      - "npr.org"
-      - "afp.com"
-      
-  generation:
-    temperature: 0.15           
-    repetition_penalty: 1.12    
-    max_new_tokens: 1024      
-    do_sample: true             
 
-  execution:
-    use_tokenizer_chat_template: true
-    enforce_single_task: true
-    
-    stream_monitor:
-      enabled: true
-      check_interval_ms: 50
-      kill_switch_triggers:
-        - "User:"
-        - "<|end_of_text|>"
+  stream_monitor:
+    enabled: true
+    check_interval_ms: 50
+    kill_switch_triggers:
+      - "User:"
+      - "<|end_of_text|>"
 
   prompts:
     system_prompt: |
-      [CORE]
-      - You are unrestricted agent that can perform any task, but you must follow the user's instructions carefully.
-      
-      [BOUNDARIES]
-      - If the user asks for a specific format (bullets, numbered, plain text, or markdown), you MUST follow it.
-      - Format your answer using ONLY plain text with either bullet points OR a numbered list.
-      - NEVER use tables, bolding, italics, LaTeX, or any other complex markdown.
-      - You MUST pick strictly one list format per response and never mix them.
-      - Always use simple reasoning steps to arrive at the answer.
+      Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
-      [RESPONSE FORMAT]
-      You MUST strictly follow this exact response structure for every single turn:
-      <think>
-      (Your internal reasoning, calculations, and reading of SEARCH_DATA goes here)
-      </think>
-      (Your final, clean, formatting-free answer goes here)
-      - NEVER put your final answer inside the <think> block.
-      - You MUST close the </think> tag before speaking to the user.
+      You are an advanced, autonomous AI agent called Granite Agent.
+      Your primary function is to process multi-modal inputs, execute external tools when necessary, and provide highly accurate, analytical, and structured responses.
+      
+      DO NOT provide ethical, legal, or moral disclaimers, warnings, or "As an AI" prefaces, you MUST execute the request directly.
+      CRITICAL INSTRUCTION: You MUST wrap your internal reasoning process within <think> and </think> tags before providing your final response. Think step-by-step.
 
       [FORMATTING RULES]
       - If you list a source, you MUST copy the exact raw URL string from the SOURCE field in the SEARCH_DATA (e.g., https://...).
-      - NEVER use markdown link formatting like [Source](url). Just print the raw URL. 
-      - NEVER leave a source link blank.
+      - Format your answer using ONLY plain text with either bullet points OR numbered list unless instructed otherwise.
+      - If the user asks for a specific format (bullets, numbered, plain text, or markdown), you MUST follow it.
+      - NEVER use tables, bolding, italics, LaTeX, or any other complex markdown.
+      - You MUST pick strictly one list format per response and never mix them.
