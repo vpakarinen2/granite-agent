@@ -42,6 +42,15 @@ pip install -r requirements.txt
 pip install docling
 ```
 
+### 5. Configure Search Provider
+The agent supports multiple search providers via `search_provider` in `config.yaml`: `'ddgs'`, `'tavily'`, or `'both'` (default).
+
+When using `'tavily'` or `'both'`, you must set the Tavily API key:
+```bash
+export TAVILY_API_KEY=your_key_here
+```
+Get a free API key at [app.tavily.com](https://app.tavily.com) (1,000 free credits/month).
+
 ## Example
 
 ```
