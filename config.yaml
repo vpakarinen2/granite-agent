@@ -18,6 +18,7 @@ agent_config:
     strict_domain_filter: true
     trusted_sites:
       # --- ACTIVE ---
+      - "bleepingcomputer.com"
       - "news.ycombinator.com"
       - "en.wikipedia.org"
       - "techcrunch.com"
