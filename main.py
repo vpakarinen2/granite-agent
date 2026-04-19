@@ -109,10 +109,14 @@ def execute_single_task(user_input, tokenizer, model, message_history):
         trusted_domains = None
     
     if 'search' in user_input.lower():
+        search_provider = search_cfg.get('search_provider', 'both')
+        tavily_max_res = search_cfg.get('tavily_max_results', None)
         search_data = perform_web_search(
-            user_input, 
+            user_input,
             max_results=max_res,
-            trusted_sites=trusted_domains
+            trusted_sites=trusted_domains,
+            search_provider=search_provider,
+            tavily_max_results=tavily_max_res
         )
     else:
         search_data = ""

@@ -12,6 +12,7 @@ from validation import is_url_accessible
 from scrape import scrape_url
 from log import agent_logger
 from ddgs import DDGS
+from tavily import TavilyClient
 from PIL import Image
 
 
@@ -176,56 +177,85 @@ def analyze_local_image(image_path: str, user_prompt: str):
     return formatted_output
 
 
-def perform_web_search(query: str, max_results=5, trusted_sites=None):
-    """Executes live web search and scrapes primary source."""
-    commands_to_remove = [
-        "search", "save", "whitelist", "markdown", "bullet point", "numbered", "clean", "paragraph", "no more than one sentence", 
-        "no more than three sentences", "no more than five sentences", "no more than ten sentences"
-    ]
-    
-    clean_query = query.lower()
-    for cmd in commands_to_remove:
-        clean_query = re.sub(rf'\b{cmd}\b', '', clean_query, flags=re.IGNORECASE)
-    
-    clean_query = re.sub(r'\b[\w-]+\.(pdf|docx|txt|html|pptx|md|log)\b', '', clean_query, flags=re.IGNORECASE)
-    clean_query = re.sub(r'[^\w\s-]', '', clean_query).strip()
-    
-    if not clean_query:
-        clean_query = query
-        
-    agent_logger.info(f"Sanitized query for search engine: '{clean_query}'")
+def _search_tavily(clean_query, max_results=5, trusted_sites=None):
+    """Executes a Tavily web search and returns formatted results."""
+    try:
+        client = TavilyClient()
+        kwargs = {
+            "query": clean_query,
+            "max_results": max_results,
+            "search_depth": "advanced",
+        }
+        if trusted_sites:
+            kwargs["include_domains"] = trusted_sites[:10]
 
+        agent_logger.info(f"Tavily search: '{clean_query}'")
+        response = client.search(**kwargs)
+        tavily_results = response.get("results", [])
+
+        if not tavily_results:
+            agent_logger.warning(f"Tavily returned no results for: {clean_query}")
+            return []
+
+        results = []
+        has_deep_context = False
+
+        for r in tavily_results:
+            url = r.get("url", "")
+            content = r.get("content", "")
+
+            if not has_deep_context and content:
+                results.append(
+                    f"--- VALIDATED DEEP CONTEXT ---\n"
+                    f"SOURCE: {url}\n"
+                    f"CONTENT:\n{content}\n"
+                    f"---------------------------"
+                )
+                has_deep_context = True
+                agent_logger.info(f"Tavily deep context from: {url}")
+                continue
+
+            results.append(f"SOURCE: {url}\nSNIPPET: {content}")
+
+        return results
+
+    except Exception as e:
+        agent_logger.error(f"Tavily Search Error: {str(e)}")
+        return []
+
+
+def _search_ddgs(clean_query, max_results=5, trusted_sites=None):
+    """Executes a DuckDuckGo web search and returns formatted results."""
     ddgs_results = []
-    
     try:
         with DDGS() as ddgs:
             if trusted_sites:
-                safe_sites = trusted_sites[:10] 
+                safe_sites = trusted_sites[:10]
                 site_operators = " OR ".join([f"site:{domain}" for domain in safe_sites])
                 strict_query = f"{clean_query} ({site_operators})"
-                
+
                 agent_logger.info("Attempting Strict Media Search...")
                 try:
                     ddgs_results = list(ddgs.text(strict_query, max_results=max_results))
                 except Exception:
                     agent_logger.warning("Strict search failed... Preparing fallback.")
                     ddgs_results = []
-            
+
             if not ddgs_results:
                 agent_logger.info(f"Broad Search Triggered: '{clean_query}'")
                 ddgs_results = list(ddgs.text(clean_query, max_results=max_results))
-                
+
         results = []
         has_deep_context = False
-        
+
         for i, r in enumerate(ddgs_results):
             if not has_deep_context:
                 if not is_url_accessible(r['href']):
                     agent_logger.warning(f"Skipping dead link: {r['href']}")
                     continue
-                    
+
                 full_text = scrape_url(r['href'], max_chars=2500)
-                
+
                 if "[ERROR:" not in full_text and "[Content blocked" not in full_text:
                     results.append(
                         f"--- VALIDATED DEEP CONTEXT ---\n"
@@ -235,23 +265,56 @@ def perform_web_search(query: str, max_results=5, trusted_sites=None):
                     )
                     has_deep_context = True
                     agent_logger.info(f"Successfully validated context from: {r['href']}")
-                    continue 
-            
+                    continue
+
             results.append(f"SOURCE: {r['href']}\nSNIPPET: {r['body']}")
-        
-        if not results:
-            agent_logger.warning(f"No results found for query: {clean_query}")
-            return "No relevant web data found."
-            
-        total_sources = len(results)
-        agent_logger.info(f"Total valid sources compiled: {total_sources}")
-        
-        formatted_results = f"[TOTAL SOURCES COMPILED: {total_sources}]\n\n" + "\n\n".join(results)
-        return formatted_results
-        
+
+        return results
+
     except Exception as e:
         agent_logger.error(f"DDGS Search Error: {str(e)}")
-        return f"Error connecting to search engine: {str(e)}"
+        return []
+
+
+def perform_web_search(query: str, max_results=5, trusted_sites=None, search_provider="both", tavily_max_results=None):
+    """Executes live web search using the configured provider and scrapes primary source."""
+    commands_to_remove = [
+        "search", "save", "whitelist", "markdown", "bullet point", "numbered", "clean", "paragraph", "no more than one sentence",
+        "no more than three sentences", "no more than five sentences", "no more than ten sentences"
+    ]
+
+    clean_query = query.lower()
+    for cmd in commands_to_remove:
+        clean_query = re.sub(rf'\b{cmd}\b', '', clean_query, flags=re.IGNORECASE)
+
+    clean_query = re.sub(r'\b[\w-]+\.(pdf|docx|txt|html|pptx|md|log)\b', '', clean_query, flags=re.IGNORECASE)
+    clean_query = re.sub(r'[^\w\s-]', '', clean_query).strip()
+
+    if not clean_query:
+        clean_query = query
+
+    agent_logger.info(f"Sanitized query for search engine: '{clean_query}'")
+
+    results = []
+
+    if search_provider in ("tavily", "both"):
+        tavily_max = tavily_max_results if tavily_max_results else max_results
+        results = _search_tavily(clean_query, max_results=tavily_max, trusted_sites=trusted_sites)
+
+    if search_provider == "ddgs" or (search_provider == "both" and not results):
+        if search_provider == "both":
+            agent_logger.info("Tavily returned no results, falling back to DDGS...")
+        results = _search_ddgs(clean_query, max_results=max_results, trusted_sites=trusted_sites)
+
+    if not results:
+        agent_logger.warning(f"No results found for query: {clean_query}")
+        return "No relevant web data found."
+
+    total_sources = len(results)
+    agent_logger.info(f"Total valid sources compiled: {total_sources}")
+
+    formatted_results = f"[TOTAL SOURCES COMPILED: {total_sources}]\n\n" + "\n\n".join(results)
+    return formatted_results
 
 
 def save_to_file(content: str, prompt_as_filename: str, extension=".txt"):

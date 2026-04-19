@@ -14,7 +14,9 @@ agent_config:
 
   search_config:
     enabled: true
+    search_provider: "both"  # 'tavily' | 'ddgs' | 'both' — set TAVILY_API_KEY env var when using 'tavily' or 'both'
     max_results: 10
+    tavily_max_results: 10
     strict_domain_filter: true
     trusted_sites:
       # --- ACTIVE ---
